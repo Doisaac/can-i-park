@@ -73,4 +73,4 @@ Antes de entregar:
 - [ ] Cada integrante debe poder explicar qué reutiliza `shared`.
 - [ ] Mantener el repositorio público y organizado.
 
-La calificación final depende de la evaluación docente. Técnicamente, el proyecto está preparado para cubrir los descriptores de nivel Excelente una vez confirmada la ejecución E2E real en Docker.
+La validación final del cumplimiento de la rúbrica se realizará después de ejecutar las pruebas completas y revisar las evidencias generadas.
