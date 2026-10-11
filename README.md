@@ -40,7 +40,7 @@ En escritorio utiliza una **vista compacta de exposición** para mantener visibl
 ## Estructura
 
 ```text
-Can-I-Park-Python/
+Can-I-Park/
 ├── docker-compose.yml
 ├── README.md
 ├── shared/
@@ -71,6 +71,7 @@ Servicios:
 - Control de Acceso: `http://localhost:8001`
 - Disponibilidad: `http://localhost:8002`
 - Kafka: `localhost:9092` desde el host
+- Notificaciones: `http://localhost:8003`
 
 Swagger:
 
@@ -183,4 +184,4 @@ El estado del estacionamiento está en memoria. Si se reinicia Disponibilidad se
 ```bash
 docker compose down
 ```
-
+A partir de estos movimientos, el sistema actualizará la cantidad de espacios ocupados y disponibles.
