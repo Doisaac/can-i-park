@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Can I Park?</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="contenedor">
+    <header class="encabezado">
+      <div>
+        <p class="eyebrow">Demo de microservicios con Kafka</p>
+        <h1>Can I Park?</h1>
+        <p class="subtitulo">
+          Registra entradas y salidas y observa el recorrido del evento desde Control de Acceso,
+          pasando por Kafka, hasta Disponibilidad y Notificaciones.
+        </p>
+      </div>
+      <div class="flujo" aria-label="Flujo principal">
+        <span>Acceso</span><strong>→</strong><span>Kafka</span><strong>→</strong>
+        <span>Disponibilidad</span><strong>→</strong><span>Kafka</span><strong>→</strong>
+        <span>Notificaciones</span>
+      </div>
+    </header>
+
+    <section class="rejilla">
+      <article class="tarjeta formulario-tarjeta">
+        <div class="titulo-seccion">
+          <div>
+            <p class="eyebrow">Movimiento</p>
+            <h2>Registrar vehículo</h2>
+          </div>
+          <span class="punto" aria-hidden="true"></span>
+        </div>
+
+        <form id="movimiento-form">
+          <label for="placa">Placa</label>
+          <input id="placa" name="placa" maxlength="12" placeholder="P123456" autocomplete="off" required>
+
+          <div class="botones">
+            <button type="submit" data-tipo="ENTRADA" class="primario">Registrar entrada</button>
+            <button type="submit" data-tipo="SALIDA" class="secundario">Registrar salida</button>
+          </div>
+        </form>
+
+        <div id="mensaje" class="mensaje neutro" role="status">
+          Esperando un movimiento.
+        </div>
+      </article>
+
+      <article class="tarjeta estado-tarjeta">
+        <div class="titulo-seccion">
+          <div>
+            <p class="eyebrow">Estado actual</p>
+            <h2>Disponibilidad</h2>
+          </div>
+          <button id="actualizar" class="icono" type="button" aria-label="Actualizar disponibilidad">↻</button>
+        </div>
+
+        <div class="metricas">
+          <div><strong id="capacidad">--</strong><span>Capacidad</span></div>
+          <div><strong id="ocupados">--</strong><span>Ocupados</span></div>
+          <div><strong id="disponibles">--</strong><span>Disponibles</span></div>
+        </div>
+
+        <div class="barra" aria-hidden="true"><div id="progreso" class="progreso"></div></div>
+        <div class="estado-linea">
+          <span>Estado</span>
+          <strong id="estado" class="estado">CARGANDO</strong>
+        </div>
+      </article>
+    </section>
+
+    <section class="tarjeta recorrido-tarjeta">
+      <div class="titulo-seccion">
+        <div>
+          <p class="eyebrow">Modo demostración</p>
+          <h2>Recorrido del evento</h2>
+        </div>
+        <span id="evento-badge" class="evento-badge">Sin evento</span>
+      </div>
+
+      <p class="ayuda-recorrido">Cada paso cambia según la evidencia obtenida del backend en tiempo real.</p>
+
+      <div class="timeline" id="timeline">
+        <div class="paso" data-paso="acceso">
+          <div class="paso-icono">1</div>
+          <div class="paso-contenido">
+            <div class="paso-cabecera">
+              <strong>Control de Acceso</strong>
+              <span class="paso-estado">Pendiente</span>
+            </div>
+            <p class="paso-detalle">Esperando que el usuario registre un movimiento.</p>
+          </div>
+        </div>
+
+        <div class="conector"></div>
+
+        <div class="paso" data-paso="evento">
+          <div class="paso-icono">2</div>
+          <div class="paso-contenido">
+            <div class="paso-cabecera">
+              <strong>Evento de movimiento</strong>
+              <span class="paso-estado">Pendiente</span>
+            </div>
+            <p class="paso-detalle">Se mostrará el UUID generado para rastrear el movimiento.</p>
+          </div>
+        </div>
+
+        <div class="conector"></div>
+
+        <div class="paso" data-paso="kafka-movimiento">
+          <div class="paso-icono">3</div>
+          <div class="paso-contenido">
+            <div class="paso-cabecera">
+              <strong>Apache Kafka</strong>
+              <span class="paso-estado">Pendiente</span>
+            </div>
+            <p class="paso-detalle">Topic: <code>can-i-park.movimientos</code></p>
+          </div>
+        </div>
+
+        <div class="conector"></div>
+
+        <div class="paso" data-paso="disponibilidad">
+          <div class="paso-icono">4</div>
+          <div class="paso-contenido">
+            <div class="paso-cabecera">
+              <strong>Disponibilidad</strong>
+              <span class="paso-estado">Pendiente</span>
+            </div>
+            <p class="paso-detalle">Esperando que el consumidor procese las reglas del dominio.</p>
+          </div>
+        </div>
+
+        <div class="conector"></div>
+
+        <div class="paso" data-paso="notificaciones">
+          <div class="paso-icono">5</div>
+          <div class="paso-contenido">
+            <div class="paso-cabecera">
+              <strong>Notificaciones</strong>
+              <span class="paso-estado">Pendiente</span>
+            </div>
+            <p class="paso-detalle">Solo recibe un segundo evento si cambia el estado general.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="leyenda">
+        <span><i class="muestra pendiente"></i>Pendiente</span>
+        <span><i class="muestra procesando"></i>Procesando</span>
+        <span><i class="muestra completado"></i>Confirmado</span>
+        <span><i class="muestra rechazado"></i>Rechazado</span>
+        <span><i class="muestra alerta"></i>Alerta</span>
+        <span><i class="muestra error"></i>Error</span>
+      </div>
+    </section>
+
+    <section class="rejilla inferior">
+      <article class="tarjeta vehiculos-tarjeta">
+        <div class="titulo-seccion">
+          <div>
+            <p class="eyebrow">Memoria del servicio</p>
+            <h2>Vehículos dentro</h2>
+          </div>
+          <span id="total-vehiculos" class="contador">0</span>
+        </div>
+        <div id="vehiculos" class="vehiculos-vacio">No hay vehículos registrados.</div>
+      </article>
+
+      <article class="tarjeta alertas-tarjeta">
+        <div class="titulo-seccion">
+          <div>
+            <p class="eyebrow">Microservicio 3</p>
+            <h2>Notificaciones</h2>
+          </div>
+          <span id="total-alertas" class="contador">0</span>
+        </div>
+        <div id="alertas" class="alertas-vacio">Sin alertas generadas.</div>
+      </article>
+    </section>
+
+    <footer>
+      La interfaz usa HTTP para interactuar con las APIs. La comunicación entre los microservicios
+      ocurre de forma asíncrona mediante Kafka.
+    </footer>
+  </main>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
