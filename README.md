@@ -1,187 +1,548 @@
-# Can I Park? — Microservicios con Kafka en Python
+# 🚗 Can I Park?
 
-Can I Park? es un proyecto académico que mantiene actualizada la disponibilidad de un estacionamiento a partir de movimientos de entrada y salida. La solución separa la recepción de datos de su procesamiento y utiliza **Apache Kafka** como intermediario asíncrono entre microservicios.
+**Actividad Evaluada 2: Proyecto**<br>
+**Desarrollo y Reutilización de Software**<br>
+**Tema 6: Sistema de Microservicios con Kafka para el Procesamiento de Datos en Tiempo Real**
 
-## Arquitectura
+---
+
+## 📘 Descripción del proyecto
+
+**Can I Park?** es un sistema distribuido que mantiene actualizada la disponibilidad de espacios de un estacionamiento a partir de movimientos de **entrada** y **salida** de vehículos.
+
+La solución está dividida en microservicios independientes que se comunican de forma asíncrona mediante **Apache Kafka**, evitando dependencias directas entre los servicios y permitiendo que cada componente tenga una responsabilidad específica.
+
+> 🐍 **Nota académica:** El proyecto fue desarrollado en **Python**, lenguaje autorizado por la docente para la implementación del Tema 6. Se utiliza **FastAPI** para las APIs y `confluent-kafka` para la comunicación con Apache Kafka.
+
+---
+
+## 🎯 Objetivo
+
+Demostrar una arquitectura basada en microservicios en la que un servicio recibe movimientos de vehículos, Kafka transporta los eventos y otros servicios procesan la información para actualizar la disponibilidad del estacionamiento y generar notificaciones cuando cambia su estado.
+
+---
+
+## 🏗️ Arquitectura del sistema
+
+El flujo principal del sistema es:
 
 ```text
-Interfaz / Swagger
-        |
-        | HTTP
-        v
-[ Control de Acceso ]
-        |
-        | can-i-park.movimientos
-        v
-[       Kafka       ]
-        |
-        v
-[  Disponibilidad  ] -----> GET /disponibilidad
-        |
-        | can-i-park.estados
-        v
-[ Notificaciones ]
+                       HTTP
+                         │
+                         ▼
+                  Control de Acceso
+                         │
+                         │ MovimientoEvento
+                         ▼
+              can-i-park.movimientos
+                         │
+                         ▼
+                    Apache Kafka
+                         │
+                         ▼
+                   Disponibilidad
+                         │
+                         │ EstadoEstacionamientoEvento
+                         ▼
+                can-i-park.estados
+                         │
+                         ▼
+                    Apache Kafka
+                         │
+                         ▼
+                   Notificaciones
 ```
 
-La interfaz solo consume las APIs HTTP. No se conecta directamente con Kafka.
+La interfaz web utiliza HTTP para consultar y mostrar información de los microservicios. La comunicación de negocio entre los servicios se realiza mediante **Kafka**, no mediante llamadas HTTP directas entre ellos.
 
-En escritorio utiliza una **vista compacta de exposición** para mantener visibles movimiento, disponibilidad, recorrido, vehículos y alertas sin desplazamiento en resoluciones comunes. Durante la demostración muestra un **recorrido visual paso a paso** del movimiento: Control de Acceso, creación del UUID, publicación en `can-i-park.movimientos`, procesamiento en Disponibilidad y comportamiento de Notificaciones. Los estados cambian visualmente entre pendiente, procesando, confirmado, rechazado, alerta, sin evento o error. También consulta `GET /alertas` para mostrar las alertas reales generadas por el tercer microservicio. La interfaz muestra como máximo las **2 alertas más recientes** cuando existe una condición activa; si el estacionamiento vuelve a `DISPONIBLE`, muestra **Sin alertas activas**. El microservicio conserva internamente un historial limitado de hasta 100 alertas para trazabilidad. Las alertas `POCOS_ESPACIOS` se presentan en ámbar y `LLENO` en rojo para diferenciar claramente advertencia y condición crítica durante la demostración.
+---
 
-## Tecnologías
+## 🧩 Componentes principales
 
-- Python 3.12 en los contenedores
-- FastAPI y Pydantic
-- Apache Kafka 3.9 en modo KRaft
-- `confluent-kafka`
-- Docker y Docker Compose
-- Nginx para la interfaz de demostración
-- pytest
+### 🔐 Control de Acceso
 
-## Estructura
+Recibe los movimientos de **ENTRADA** y **SALIDA**, valida los datos recibidos y publica un evento en Kafka.
+
+Topic utilizado:
 
 ```text
-Can-I-Park/
-├── docker-compose.yml
-├── README.md
+can-i-park.movimientos
+```
+
+---
+
+### 🅿️ Disponibilidad
+
+Consume los movimientos publicados por Control de Acceso y aplica las reglas de negocio del estacionamiento.
+
+Entre sus responsabilidades se encuentran:
+
+- Registrar vehículos dentro del estacionamiento.
+- Evitar entradas duplicadas.
+- Rechazar salidas de vehículos inexistentes.
+- Impedir nuevas entradas cuando el estacionamiento está lleno.
+- Mantener la cantidad de espacios ocupados y disponibles.
+- Evitar procesar dos veces el mismo evento mediante idempotencia.
+- Determinar los estados `DISPONIBLE`, `POCOS_ESPACIOS` y `LLENO`.
+
+Cuando cambia el estado general del estacionamiento publica un nuevo evento en:
+
+```text
+can-i-park.estados
+```
+
+---
+
+### 🔔 Notificaciones
+
+Consume los cambios de estado publicados por Disponibilidad y genera alertas cuando el estacionamiento llega a condiciones relevantes, como:
+
+- `POCOS_ESPACIOS`
+- `LLENO`
+
+Los cambios que mantienen el estado `DISPONIBLE` no generan alertas innecesarias.
+
+---
+
+### 🖥️ Interfaz
+
+La interfaz permite demostrar visualmente el recorrido completo de un movimiento.
+
+Desde ella se puede:
+
+- Registrar entradas.
+- Registrar salidas.
+- Consultar capacidad.
+- Consultar espacios ocupados.
+- Consultar espacios disponibles.
+- Visualizar el estado del estacionamiento.
+- Consultar los vehículos dentro.
+- Observar el recorrido del evento.
+- Visualizar las alertas generadas por Notificaciones.
+
+La interfaz utiliza **Nginx** como servidor web y proxy inverso.
+
+---
+
+## ✅ Características principales
+
+- ✅ Arquitectura de microservicios.
+- ✅ Comunicación asíncrona mediante Apache Kafka.
+- ✅ Procesamiento de entradas y salidas.
+- ✅ Disponibilidad actualizada en tiempo real.
+- ✅ Validación de reglas de negocio.
+- ✅ Idempotencia mediante `evento_id`.
+- ✅ Manejo seguro de concurrencia.
+- ✅ Notificaciones por cambios de estado.
+- ✅ Contratos y utilidades Kafka reutilizables.
+- ✅ APIs documentadas mediante Swagger.
+- ✅ Interfaz web de demostración.
+- ✅ Contenerización con Docker.
+- ✅ Orquestación con Docker Compose.
+- ✅ Pruebas unitarias, de integración y E2E.
+- ✅ Entorno reproducible de pruebas.
+
+---
+
+## ♻️ Reutilización y modularidad
+
+Uno de los objetivos principales del proyecto es aplicar principios de **reutilización de software**.
+
+Para evitar duplicación se creó el paquete:
+
+```text
+shared/canipark_shared/
+```
+
+Este paquete contiene contratos y utilidades que pueden ser utilizados por distintos microservicios.
+
+Entre los elementos reutilizados se encuentran:
+
+```text
+MovimientoEntrada
+MovimientoEvento
+ResultadoMovimiento
+EstadoEstacionamientoEvento
+TipoMovimiento
+EstadoEstacionamiento
+```
+
+También se centralizan utilidades para:
+
+- Crear productores Kafka.
+- Crear consumidores Kafka.
+- Publicar mensajes JSON.
+- Consumir eventos.
+- Gestionar confirmaciones de entrega.
+- Realizar commit manual de offsets.
+
+De esta manera, cada microservicio reutiliza una misma implementación para los elementos compartidos sin duplicar lógica.
+
+---
+
+## 🧠 Patrones y principios aplicados
+
+### 📨 Publish / Subscribe
+
+Apache Kafka funciona como intermediario entre productores y consumidores.
+
+Un servicio publica eventos sin necesitar conocer directamente qué servicio los consumirá.
+
+Esto permite reducir el acoplamiento entre los componentes.
+
+---
+
+### 🔄 Producer / Consumer
+
+El sistema implementa dos flujos principales:
+
+```text
+Control de Acceso
+      │
+   Producer
+      ▼
+    Kafka
+      │
+   Consumer
+      ▼
+Disponibilidad
+```
+
+y:
+
+```text
+Disponibilidad
+      │
+   Producer
+      ▼
+    Kafka
+      │
+   Consumer
+      ▼
+Notificaciones
+```
+
+---
+
+### 💉 Inyección de dependencias
+
+Control de Acceso utiliza una abstracción para la publicación de movimientos.
+
+Esto permite sustituir la implementación real de Kafka durante las pruebas sin modificar la lógica principal del endpoint.
+
+---
+
+### 🔗 Bajo acoplamiento
+
+Los microservicios no importan directamente el código interno de otros microservicios.
+
+La comunicación de negocio se realiza mediante contratos compartidos y eventos publicados en Kafka.
+
+---
+
+### 🎯 Alta cohesión
+
+Cada componente posee una responsabilidad concreta:
+
+| Componente | Responsabilidad |
+| --- | --- |
+| Control de Acceso | Recibir movimientos |
+| Disponibilidad | Aplicar reglas del estacionamiento |
+| Notificaciones | Reaccionar a cambios de estado |
+| Kafka | Transportar eventos |
+| Interfaz | Presentar y demostrar el funcionamiento |
+
+---
+
+## 🛠️ Tecnologías utilizadas
+
+- 🐍 **Python 3.12**
+- ⚡ **FastAPI**
+- 📨 **Apache Kafka 3.9**
+- 🐳 **Docker**
+- 🐳 **Docker Compose**
+- 🌐 **Nginx**
+- 🧪 **Pytest**
+- 📦 **Pydantic**
+- 🔌 **confluent-kafka**
+- 🌐 **HTML, CSS y JavaScript**
+
+---
+
+## 📂 Estructura del proyecto
+
+```text
+can-i-park/
+│
 ├── shared/
 │   └── canipark_shared/
+│       ├── eventos.py
+│       └── kafka.py
+│
 ├── servicios/
 │   ├── acceso/
 │   ├── disponibilidad/
 │   └── notificaciones/
+│
 ├── interfaz/
+│   ├── index.html
+│   ├── styles.css
+│   ├── app.js
+│   ├── nginx.conf
+│   └── Dockerfile
+│
 ├── tests/
+│
+├── scripts/
+│
 ├── docs/
-└── scripts/
+│   ├── componentes/
+│   ├── evidencias/
+│   ├── ARQUITECTURA.md
+│   ├── DECISIONES.md
+│   ├── PRUEBAS.md
+│   ├── RESULTADO_PRUEBAS.md
+│   └── REVISION_RUBRICA.md
+│
+├── docker-compose.yml
+├── requirements-dev.txt
+├── pytest.ini
+└── README.md
 ```
 
-`shared` es un paquete reutilizable con contratos de eventos y utilidades Kafka. Cada microservicio conserva su responsabilidad y su Dockerfile.
+---
 
-## Ejecutar el proyecto
+# 🚀 Ejecución del proyecto
 
-Requisito: Docker Desktop o Docker Engine con Docker Compose.
+## 📥 Paso 1: Clonar el repositorio
 
 ```bash
-docker compose up --build
+git clone https://github.com/Doisaac/can-i-park.git
+cd can-i-park
 ```
 
-Servicios:
+---
 
-- Interfaz: `http://localhost:8080`
-- Control de Acceso: `http://localhost:8001`
-- Disponibilidad: `http://localhost:8002`
-- Kafka: `localhost:9092` desde el host
-- Notificaciones: `http://localhost:8003`
+## 🐳 Paso 2: Verificar Docker
 
-Swagger:
+Es necesario tener instalado y ejecutándose:
 
-- `http://localhost:8001/docs`
-- `http://localhost:8002/docs`
+- Docker
+- Docker Compose
 
-Los tres microservicios, Kafka y la interfaz se levantan juntos con el mismo comando.
+Se puede verificar mediante:
 
-Swagger de Notificaciones: `http://localhost:8003/docs`.
+```bash
+docker --version
+docker compose version
+```
 
-## Flujo de un movimiento
+---
 
-1. El cliente envía `placa` y `tipo` a `POST /movimientos`.
-2. Pydantic normaliza y valida la entrada.
-3. Acceso crea un `MovimientoEvento` con UUID y fecha/hora.
-4. Acceso publica el evento en `can-i-park.movimientos`.
-5. Disponibilidad consume el evento y aplica las reglas.
-6. `GET /movimientos/{evento_id}` permite comprobar cuándo terminó el procesamiento.
-7. `GET /disponibilidad` muestra el estado resultante.
-8. Si cambia la categoría del estacionamiento, Disponibilidad publica en `can-i-park.estados`.
-9. Notificaciones consume ese cambio y genera una alerta cuando el nuevo estado es `POCOS_ESPACIOS` o `LLENO`.
+## ▶️ Paso 3: Construir y levantar el sistema
 
-`POST /movimientos` responde **202 Accepted** porque el procesamiento termina de forma asíncrona.
+Ejecutar:
 
-## Reglas principales
+```bash
+docker compose up -d --build
+```
 
-- No se supera la capacidad.
-- Una placa no puede entrar dos veces sin salir.
-- Una placa no puede salir si no está dentro.
-- Una reentrega con el mismo `evento_id` no repite el efecto.
-- Estados: `DISPONIBLE`, `POCOS_ESPACIOS` y `LLENO`.
-- La placa acepta entre 3 y 12 caracteres después de normalizar espacios y mayúsculas.
+Docker Compose levantará:
 
-Por defecto la capacidad es 100 y el umbral de pocos espacios es 10.
+- Apache Kafka.
+- Control de Acceso.
+- Disponibilidad.
+- Notificaciones.
+- Interfaz.
 
-## Pruebas y validación
+---
 
-El método oficial de validación usa **Docker**, por lo que no depende de la versión de Python, `pip` o `pytest` instalada en la computadora de cada integrante.
+## 🔎 Paso 4: Verificar los contenedores
 
-En Windows PowerShell:
+```bash
+docker compose ps
+```
+
+Los componentes principales deben aparecer en estado:
+
+```text
+healthy
+```
+
+---
+
+## 🌐 Acceso a los servicios
+
+| Servicio | Dirección |
+| --- | --- |
+| 🚗 Interfaz | `http://localhost:8080` |
+| 🔐 Swagger - Control de Acceso | `http://localhost:8001/docs` |
+| 🅿️ Swagger - Disponibilidad | `http://localhost:8002/docs` |
+| 🔔 Swagger - Notificaciones | `http://localhost:8003/docs` |
+| 📨 Kafka | `localhost:9092` |
+
+---
+
+# 🎬 Modo de demostración
+
+La configuración normal del proyecto utiliza:
+
+```text
+Capacidad: 100
+Umbral de pocos espacios: 10
+```
+
+Para realizar una demostración visual más rápida en **PowerShell**, se puede utilizar temporalmente una capacidad menor:
+
+```powershell
+$env:CAPACIDAD_ESTACIONAMIENTO="10"
+$env:UMBRAL_POCOS_ESPACIOS="2"
+
+docker compose up -d --force-recreate disponibilidad
+```
+
+Esto permite demostrar fácilmente los estados:
+
+```text
+DISPONIBLE
+POCOS_ESPACIOS
+LLENO
+```
+
+Al finalizar la demostración se puede restaurar la configuración normal mediante:
+
+```powershell
+Remove-Item Env:CAPACIDAD_ESTACIONAMIENTO
+Remove-Item Env:UMBRAL_POCOS_ESPACIOS
+
+docker compose up -d --force-recreate disponibilidad
+```
+
+---
+
+# 🧪 Pruebas y validación
+
+El proyecto contiene pruebas:
+
+- Unitarias.
+- De API.
+- De dominio.
+- De integración.
+- E2E con Kafka real.
+- De configuración.
+- De interfaz.
+
+La validación completa puede ejecutarse en Windows mediante:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\scripts\validar_entrega.ps1
 ```
 
-En Linux/macOS:
+En Linux o sistemas compatibles con Bash:
 
 ```bash
-chmod +x scripts/validar_entrega.sh
-./scripts/validar_entrega.sh
+bash scripts/validar_entrega.sh
 ```
 
-El validador crea un contenedor auxiliar llamado `pruebas` con Python 3.12 y las dependencias necesarias. Este contenedor **no es un microservicio** y no queda ejecutándose con el sistema.
+---
 
-La validación:
+## ✅ Resultado de la validación final
 
-1. comprueba Docker;
-2. construye el entorno reproducible de pruebas;
-3. ejecuta `compileall` dentro de Docker;
-4. ejecuta las pruebas automatizadas dentro de Docker;
-5. levanta Kafka, Acceso, Disponibilidad, Notificaciones e Interfaz;
-6. comprueba `Acceso -> Kafka -> Disponibilidad`;
-7. comprueba `Disponibilidad -> Kafka -> Notificaciones`;
-8. verifica la interfaz;
-9. genera las evidencias E2E en `docs/`;
-10. restaura la configuración normal de capacidad 100 y umbral 10.
+La validación realizada sobre el sistema obtuvo:
 
-Por lo tanto, para **ejecutar y validar la entrega no es obligatorio instalar Python localmente**. Docker proporciona Python 3.12 de forma consistente para todos los integrantes.
-
-### Desarrollo local opcional
-
-Si alguien desea ejecutar las pruebas directamente desde VS Code puede usar un entorno virtual e instalar:
-
-```bash
-python -m pip install -r requirements-dev.txt
-python -m pytest
+```text
+26 passed
 ```
 
-Esto queda como opción de desarrollo, no como requisito para validar la entrega.
+Los flujos E2E verificados fueron:
 
-## Configuración
-
-Variables principales:
-
-```env
-TOPIC_MOVIMIENTOS=can-i-park.movimientos
-TOPIC_ESTADOS=can-i-park.estados
-CAPACIDAD_ESTACIONAMIENTO=100
-UMBRAL_POCOS_ESPACIOS=10
-KAFKA_ENABLED=true
+```text
+Acceso → Kafka → Disponibilidad
 ```
 
-Hay un ejemplo en `.env.example`.
+y:
 
-## Documentación
+```text
+Disponibilidad → Kafka → Notificaciones
+```
 
-- `docs/ARQUITECTURA.md`: componentes y flujo.
-- `docs/DECISIONES.md`: decisiones técnicas y principios aplicados.
-- `docs/PRUEBAS.md`: estrategia y escenarios de prueba.
-- `docs/RESULTADO_PRUEBAS.md`: validaciones realizadas en el paquete.
-- `docs/REVISION_RUBRICA.md`: correspondencia entre el proyecto y la rúbrica.
+El resultado general fue:
 
-## Limitaciones conocidas
+```text
+VALIDACION COMPLETA: OK
+```
 
-El estado del estacionamiento está en memoria. Si se reinicia Disponibilidad se pierde el estado actual. Para el alcance académico se prioriza demostrar microservicios, Kafka, Docker, modularidad y reutilización. Una versión de producción incorporaría persistencia, observabilidad más completa y una estrategia de mensajes fallidos (DLQ).
+Después de la validación, los cinco componentes principales quedaron en estado saludable.
 
-## Detener
+La evidencia detallada se encuentra en:
+
+```text
+docs/RESULTADO_PRUEBAS.md
+```
+
+---
+
+## 📚 Documentación técnica
+
+El proyecto incluye documentación específica para cada componente:
+
+```text
+docs/componentes/PLATAFORMA_KAFKA.md
+docs/componentes/CONTROL_ACCESO.md
+docs/componentes/DISPONIBILIDAD.md
+docs/componentes/NOTIFICACIONES.md
+docs/componentes/INTERFAZ_DEMO.md
+```
+
+También se incluyen documentos transversales:
+
+| Documento | Contenido |
+| --- | --- |
+| `docs/ARQUITECTURA.md` | Arquitectura completa del sistema |
+| `docs/DECISIONES.md` | Decisiones técnicas y trade-offs |
+| `docs/PRUEBAS.md` | Estrategia de pruebas |
+| `docs/RESULTADO_PRUEBAS.md` | Resultados reales de validación |
+| `docs/REVISION_RUBRICA.md` | Relación entre requisitos y evidencias |
+
+---
+
+## ⚠️ Limitaciones conocidas
+
+El estado actual del estacionamiento se mantiene en memoria. Si el microservicio de Disponibilidad se reinicia, el estado registrado durante esa ejecución se pierde.
+
+Para el alcance académico se priorizó demostrar microservicios, comunicación asíncrona con Kafka, modularidad, reutilización, pruebas y contenerización con Docker.
+
+Una versión orientada a producción podría incorporar persistencia de datos, observabilidad más completa y una estrategia para mensajes que no puedan procesarse correctamente, como una Dead Letter Queue (DLQ).
+
+---
+## ⏹️ Detener el proyecto
+
+Para detener todos los componentes:
 
 ```bash
 docker compose down
 ```
-A partir de estos movimientos, el sistema actualizará la cantidad de espacios ocupados y disponibles.
+
+---
+
+# 👥 Integrantes del equipo
+
+| **Nombre** | **Carnet** |
+| --- | --- |
+| **Douglas Isaac Barrera Magaña** | `BM22025` |
+| **Ricardo Enrique Heredia Ramos** | `HR21024` |
+| **Gabriel Omar Calderón Calderón** | `CC22060` |
+| **Douglas Enrique Sigüenza Quele** | `SQ22005` |
+| **Fernando José Barraza Álvarez** | `BA22025` |
+
+---
+
+## 🎓 Universidad de El Salvador
+
+**Facultad Multidisciplinaria de Occidente**<br>
+**Ingeniería en Desarrollo de Software**<br>
+**Desarrollo y Reutilización de Software**<br>
+**Ciclo II/2026**
+
+---
