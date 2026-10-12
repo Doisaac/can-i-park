@@ -14,3 +14,6 @@ venv/
 *.egg-info/
 build/
 dist/
+
+# Evidencias generadas por pruebas E2E
+docs/EVIDENCIA_*.txt
