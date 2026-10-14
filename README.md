@@ -6,6 +6,13 @@
 
 ---
 
+## Tabla de contenidos
+
+- [Ejecución del proyecto](https://github.com/Doisaac/can-i-park/tree/develop#-ejecuci%C3%B3n-del-proyecto)
+- [Modo de demostración](https://github.com/Doisaac/can-i-park/tree/develop#-modo-de-demostraci%C3%B3n)
+- [Pruebas y validación](https://github.com/Doisaac/can-i-park/tree/develop#-pruebas-y-validaci%C3%B3n)
+- [Integrantes del equipo](https://github.com/Doisaac/can-i-park/tree/develop#-integrantes-del-equipo)
+
 ## 📘 Descripción del proyecto
 
 **Can I Park?** es un sistema distribuido que mantiene actualizada la disponibilidad de espacios de un estacionamiento a partir de movimientos de **entrada** y **salida** de vehículos.
