@@ -6,6 +6,13 @@
 
 ---
 
+## Tabla de contenidos
+
+- [Ejecución del proyecto](#-ejecución-del-proyecto)
+- [Modo de demostración](#-modo-de-demostración)
+- [Pruebas y validación](#-pruebas-y-validación)
+- [Integrantes del equipo](#-integrantes-del-equipo)
+
 ## 📘 Descripción del proyecto
 
 **Can I Park?** es un sistema distribuido que mantiene actualizada la disponibilidad de espacios de un estacionamiento a partir de movimientos de **entrada** y **salida** de vehículos.
