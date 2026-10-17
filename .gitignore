@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+.DS_Store
+
+# Python packaging
+*.egg-info/
+build/
+dist/
+
+# Evidencias generadas por pruebas E2E
+docs/EVIDENCIA_*.txt
